@@ -45,8 +45,8 @@ if [ -z "$WHO" ]; then
 fi
 echo "  ✓ 已登录为：$WHO"
 
-# ---------- 2. 创建仓库 ----------
-echo "  → 创建仓库 ..."
+# ---------- 2. 创建仓库（已存在则跳过） ----------
+echo "  → 检查 / 创建仓库 ..."
 HTTP=$(curl -s -o /tmp/wb_gh.json -w "%{http_code}" -X POST "$API/user/repos" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Accept: application/vnd.github+json" \
@@ -55,7 +55,7 @@ HTTP=$(curl -s -o /tmp/wb_gh.json -w "%{http_code}" -X POST "$API/user/repos" \
 if [ "$HTTP" = "201" ]; then
   echo "  ✓ 仓库已创建"
 elif [ "$HTTP" = "422" ]; then
-  echo "  ✓ 仓库已存在，直接推送"
+  echo "  ✓ 仓库已存在，继续推送"
 else
   echo "  [失败] 创建仓库返回 HTTP $HTTP"
   cat /tmp/wb_gh.json
@@ -64,24 +64,29 @@ else
   exit 1
 fi
 
-# ---------- 3. 推送 ----------
 git remote remove origin 2>/dev/null
 git remote add origin "https://github.com/$USER_NAME/$REPO.git"
 
-echo "  → 推送代码 ..."
-if git push "https://oauth2:$TOKEN@github.com/$USER_NAME/$REPO.git" main:main 2>&1 | sed "s/$TOKEN/****/g"; then
-  git branch --set-upstream-to=origin/main main 2>/dev/null
+# ---------- 3. 凭据存入 macOS 钥匙串 ----------
+echo "  → 保存凭据到钥匙串 ..."
+git config --global credential.helper osxkeychain 2>/dev/null
+if printf "protocol=https\nhost=github.com\nusername=%s\npassword=%s\n\n" "$USER_NAME" "$TOKEN" | git credential-osxkeychain store 2>/dev/null; then
+  echo "  ✓ 已保存（以后推送不用再输）"
 else
-  echo "  [失败] 推送失败"
+  echo "  ! 未能保存，推送时可能还会提示输入"
+fi
+
+# ---------- 4. 推送 ----------
+echo "  → 推送代码 ..."
+if git push -u origin main; then
+  echo "  ✓ 推送成功"
+else
+  echo ""
+  echo "  [失败] 推送被拒绝"
+  echo "  常见原因：Token 未勾选 repo 权限 / Token 已过期 / 无该仓库写权限"
   echo ""
   read -p "  按回车键关闭 ..." _
   exit 1
-fi
-
-# ---------- 4. 记住凭据（可选） ----------
-if printf "protocol=https\nhost=github.com\nusername=%s\npassword=%s\n" "$USER_NAME" "$TOKEN" | git credential-osxkeychain store 2>/dev/null; then
-  git config --global credential.helper osxkeychain 2>/dev/null
-  echo "  ✓ 凭据已存入 macOS 钥匙串，以后 git push 不用再输 Token"
 fi
 
 echo ""
