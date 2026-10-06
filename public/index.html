@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>我的工作台</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div class="boot" id="boot"><div class="ring"></div><p>正在打开工作台 ...</p></div>
+
+<div class="app" id="app" hidden>
+  <aside class="side">
+    <button class="me" id="me"></button>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot" id="sideFoot"></div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <div class="ptitle">
+        <h1 id="pageTitle">概览</h1>
+        <p id="pageSub"></p>
+      </div>
+      <div class="top-actions" id="topActions"></div>
+    </header>
+    <section class="content" id="content"></section>
+  </div>
+</div>
+
+<div id="modalRoot"></div>
+<div class="toast-root" id="toastRoot"></div>
+<div class="tip" id="tip"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
